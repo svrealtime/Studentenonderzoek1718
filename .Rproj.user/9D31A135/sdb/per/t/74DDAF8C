@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "  @Manual{r1,\n    title = {R: A Language and Environment for Statistical Computing},\n    author = {{R Core Team}},\n    organization = {R Foundation for Statistical Computing},\n    address = {Vienna, Austria},\n    year = {2016},\n    url = {https://www.R-project.org/},\n  }\n  \n  @Document{scholten_2017,\n    title={Aantallen studenten},\n    url={https://www.hanze.nl/nld/organisatie/stafbureau/financieel-economische-zaken/producten-en-diensten/studentenadministratie/aantallen-studenten},\n    publisher={Hanzehogeschool Groningen},\n    author={Scholten, Wouter},\n    year={2017},\n    month={Nov}\n  }\n  ",
+    "created" : 1514312855074.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1792404681",
+    "id" : "74DDAF8C",
+    "lastKnownWriteTime" : 1514313630,
+    "last_content_update" : 1514313630974,
+    "path" : "H:/Drives van mijn team/Bestuur/2017 - 2018/21 Enquetes/Studentenonderzoek november/Studentenonderzoek/refs.bib",
+    "project_path" : "refs.bib",
+    "properties" : {
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "text"
+}

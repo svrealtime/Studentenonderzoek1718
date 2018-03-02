@@ -1,0 +1,852 @@
+---
+title: "Studentenonderzoek"
+author: "Leon F.A. Wetzel"
+date: "26 januari 2018"
+output:
+  html_document:
+    code_folding: show
+    df_print: paged
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  pdf_document:
+    citation_package: biblatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+csl: apa.csl
+bibliography: refs.bib
+---
+
+
+# Over het onderzoek
+
+Het studentenonderzoek vond plaats tussen 14 november en 24 november 2017. Het onderzoek is uitgevoerd door Leon Wetzel in opdracht van het bestuur van studievereniging Real*Time*. Real*Time* is de studievereniging voor de studie HBO-ICT aan de Hanzehogeschool Groningen. De studie valt onder het Instituut voor Communicatie, Media & IT.
+
+Centraal staat de volgende onderzoeksvraag:
+
+*Wat vindt de student van studievereniging RealTime?*
+
+Deze onderzoeksvraag wordt mede beantwoord door onder andere te kijken naar de volgende deelvragen:
+
+1. *Voelen studenten zich welkom bij studievereniging RealTime?*
+2. *Wat willen studenten (anders) zien bij studievereniging RealTime?*
+3. *Wat ervaren studenten als positief bij RealTime?*
+4. *Wat ervaren studenten als negatief bij RealTime?*
+
+Tijdens het onderzoek werd ook gekeken naar de wens vanuit studenten voor bijlessen. Real*Time* biedt sinds het voorjaar van 2017 bijlessen aan onder de naam Study Support. Ook zijn er vragen gesteld over de verenigingswebsite en over de evenementen van de vereniging. De resultaten van de online vragenlijst zijn verwerkt in R [@r1].
+
+---
+
+- Een $p$-waarde is de statistische berekening die aangeeft hoe groot de kans is dat per toeval een bepaald resultaat tot stand is gekomen als de nullhypothese waar is. Hoe kleiner de $p$-waarde, hoe uitzonderlijker het resultaat is. Standaard geldt dat de kans op toeval lager is dan 5%. Deze standaard wordt gehanteerd in dit onderzoek, want de $a$-waarde is overal 0,05. Als de $p$-waarde lager is dan de $a$-waarde ($p < a$), dan geldt significantie.
+
+- De Mann-Whitney U test en de Wilcoxon rank sum test zijn hetzelfde.
+
+- Bij enkele vragen is de 5-puntslikertschaal gebruikt om gegevens te verzamelen en om te behandelen op intervalmeetniveau [@wieling2; @mcleod_2008]. 1 staat voor *Helemaal niet eens* en 5 staat voor *Helemaal eens*.
+
+---
+
+## De studenten
+
+```{r, echo=F,fig.width=10, fig.height=5,warning=F,message=F}
+
+# devtools::install_github("crsh/papaja")
+# library(papaja)
+
+library(readr)
+dat <- read_delim("Opinieonderzoek.csv", 
+    ";", escape_double = FALSE,
+    col_types = cols(q1 = col_factor(levels = c("Lid", "Niet-lid")),
+    				 q2 = col_factor(levels = c("1", "2", "3", "4", "5")),
+    				 q5 = col_factor(levels = c("Ja", "Nee")),
+    				 q7 = col_factor(levels = c("1", "2", "3", "4", "5")),
+    				 q8 = col_factor(levels = c("Software Engineering", "Network & Security Engineering", "Business IT & Management")),
+    				 q10 = col_factor(levels = c("Ja", "Nee", "Misschien")),
+    				 q13 = col_factor(levels = c("Ja", "Nee")),
+    				 q14 = col_factor(levels = c("Ja", "Nee")),
+    				 q15 = col_factor(levels = c("Ja", "Nee")),
+    				 q16 = col_factor(levels = c("Ja", "Nee")),
+    				 q18 = col_factor(levels = c("1", "2", "3", "4", "5")),
+    				 q19 = col_factor(levels = c("1", "2", "3", "4", "5")),
+    				 q20 = col_factor(levels = c("1", "2", "3", "4", "5")),
+    				 q21 = col_factor(levels = c("1", "2", "3", "4", "5")),
+    				 q22 = col_factor(levels = c("1", "2", "3", "4", "5"))),
+    trim_ws = TRUE)
+
+q3 <- read_delim("q3.csv",";")
+
+hg <- read_delim("Hanze.csv",";", escape_double = FALSE,col_types = cols(geslacht = col_factor(levels = c("M","V"))))
+
+# filter op opleiding HBO-ICT (VT & DT)
+hg <- hg[hg$croho == 30020,]
+
+hg$nationaliteit <- as.factor(hg$nationaliteit)
+
+# Beautiful function to specify decimals.
+# By Jeromy Anglim (https://stackoverflow.com/questions/3443687/formatting-decimal-places-in-r)
+specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
+
+
+```
+
+**`r nrow(dat)`** studenten hebben de digitale vragenlijst ingevuld. Van deze studenten studeren **`r nrow(dat[dat$q8 == "Software Engineering",])`** Software Engineering (SE), **`r nrow(dat[dat$q8 == "Network & Security Engineering",])`** Network & Security Engineering (NSE) en **`r nrow(dat[dat$q8 == "Business IT & Management",])`** Business IT & Management (BITM).
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q8, main="Verdeling van respondenten over majors",xlab="Majors",ylab = "Hoeveelheid studenten")
+
+plot(dat$q2, main="Verdeling van respondenten over studiejaren",xlab="Studiejaren",ylab = "Hoeveelheid studenten")
+
+```
+
+Om uitspraken te doen over de populatie - de studenten van HBO-ICT -, wordt gebruik gemaakt van de data van het stafbureau Financieel Economische Zaken van de Hanzehogeschool Groningen [@scholten_2017]. De totale populatie bestaat uit ongeveer **`r nrow(hg)`** ingeschreven studenten, inclusief de deeltijdvariant (waarvan $N$=**`r nrow(hg[hg$vorm == "DT",])`**). De deeltijdstudenten vallen buiten de scope van het onderzoek. Voor de voltijd gelden dat er **`r nrow(hg[hg$vorm == "VT" & hg$geslacht == "V",])`** vrouwelijke studenten zijn en dat er **`r nrow(hg[hg$vorm == "VT" & hg$geslacht == "M",])`** mannelijke studenten zijn.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(hg[hg$vorm == "VT",]$geslacht, main = "Man-vrouwverhouding binnen HBO-ICT voltijd",xlab="Geslacht",ylab="Hoeveelheid studenten")
+
+```
+
+HBO-ICT kende ook een internationale instroom van studenten. Omdat de major Business IT & Management geen internationale instroom meer kent, zijn internationale studenten buiten de scope van het onderzoek gelaten. Hieronder is de verdeling van de nationaliteiten op HBO-ICT voltijd te zien.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+table(hg[hg$vorm == "VT",]$nationaliteit)
+
+```
+
+## Ledenverdeling
+
+De `r nrow(dat)` studenten zijn onder te verdelen in **`r nrow(dat[dat$q1 == "Lid",])`** leden en **`r nrow(dat[dat$q1 == "Niet-lid",])`** niet-leden.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q1, main="Verdeling van leden en niet-leden",xlab="Soort",ylab = "Hoeveelheid studenten")
+
+```
+
+# Activiteiten
+
+In dit hoofdstuk staan de activiteiten van de vereniging centraal. Er wordt gekeken naar de bekendheid van de activiteiten bij studenten en naar welke activiteiten studenten willen gaan.
+
+## Bekendheid van activiteiten
+
+De activiteiten van Real*Time* worden op verschillende manieren gepromoot. Zo hangen er in het Instituut voor Communicatie, Media & IT posters voor diverse activiteiten, worden activiteiten gedeeld op sociale media en de website en vindt promotie ook mond-tot-mond plaats.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q2, main="Mate waarin studenten bekend zijn met verenigingsactiviteiten",xlab="Waardering",ylab = "Hoeveelheid studenten")
+
+table(dat$q2)
+
+```
+
+In de bovenstaande figuur is te zien dat de meeste studenten aangeven dat zij wel bekend zijn met de activiteiten van Real*Time* ($N$ = `r nrow(dat[dat$q2 == "4" | dat$q2 == "5",])`, waardering met 4 of 5). `r nrow(dat[dat$q2 == "1" | dat$q2 == "2",])` studenten gaven aan niet of nauwelijks bekend te zijn met de verenigingsactiviteiten.
+
+## Verschillen tussen leden en niet-leden
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+table(dat$q1,dat$q2)
+
+```
+
+Is er een significant verschil tussen leden en niet-leden als het gaat om de bekendheid van activiteiten? Om die vraag te beantwoorden, willen wij een $t$-test uitvoeren. Om te kijken of we een $t$-test mogen uitvoeren, kijken we eerst of de waarderingen van de respondenten normaalverdeeld zijn. Naast het uitbeelden van de Q-Q plot doen we ook de Shapiro-Wilk test. Als $p < 0.05$, dan zijn de waarderingen van de respondenten **niet** normaalverdeeld.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+quant2 <- as.integer(dat$q2)
+
+qqnorm(quant2)
+qqline(quant2)
+
+shapiro.test(quant2)
+
+```
+
+We kunnen aannemen dat de waarderingen van de respondenten niet normaalverdeeld zijn. Ter vervanging van de $t$-test dienen we daarom de Mann-Whitney U test uit te voeren.
+
+De hypotheses zijn:
+
+$H_0$: Er is geen significant verschil tussen leden en niet-leden als het gaat om de bekendheid van verenigingsactiviteiten.
+
+$H_a$: Er is een significant verschil tussen leden en niet-leden als het gaat om de bekendheid van verenigingsactiviteiten.
+
+Significantie wordt bereikt als de $p$-waarde lager is dan 0.05, ook wel bekend als $a$. Wat geldt is dus dat $H_a$ geaccepteerd kan worden als $p < a$.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+(tq2 <- wilcox.test(quant2 ~ q1, data = dat, alternative = "two.sided"))
+
+```
+
+Hierboven is te zien dat de $p$-waarde uitkomt op `r specify_decimal(tq2$p.value, 7)`, dus geldt $p < a$. Dit betekent dat $H_0$ afgewezen kan worden en dat $H_a$ geaccepteerd kan worden. Er is een significant verschil tussen leden en niet-leden als het gaat om de bekendheid van verenigingsactiviteiten. Significantie werd bereikt onder $a$-level 0,05: W = `r tq2$statistic`, $p$ < 0.0002.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+library(effsize)
+(dq2 <- cliff.delta(quant2 ~ q1, data=dat))
+
+```
+
+De gemiddelde score voor leden is 4,1515152. Voor niet-leden is de gemiddelde score 2,3076923. De effectgrootte is groot (Cliff's $d$ = `r dq2$estimate`).
+
+## Wat wil de student?
+
+Studenten is gevraagd naar welke activiteiten zij willen gaan van Real*Time*.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F, rows.print=15}
+
+q3$soort <- as.factor(q3$soort)
+q3
+
+```
+
+Te zien is dat de **gezelligheidsactiviteiten** het meest in trek zijn bij studenten van HBO-ICT, gevolgd door LAN-party's en bezoeken aan beurzen zoas CeBIT. Studiegerelateerde activiteiten, zoals beursbezoeken en InHouses, komen tweemaal voor in de top vijf van populairste activiteiten. *Hackathons* zaten niet in de vooraf getoonde opties en werd aangegeven door **1** student.
+
+## Onderwerpen voor workshops en lezingen
+
+De studiecommissie van Real*Time* organiseert maandelijks lezingen en workshops over ICT-gerelateerde onderwerpen. Elk jaar wordt door de commissie of het bestuur gepeild wat studenten en personeelsleden interessante onderwerpen zouden vinden die behandeld zouden kunnen worden.
+
+<img src="q4.png">
+
+De populairste onderwerpen zijn **Security** (7),**Cryptocurrency** (4), **Blockchain** (4) en **Kunstmatige Intelligentie (AI)** (3). Ook **Big Data** (2), **Domotica** (2), **Machine Learning** (2) en **Privacy** (2) staan in de top 5 verder.
+
+# Study Support
+
+Study Support is de naam waaronder bijlessen en tentamenvoorbereidingen vallen. Sinds voorjaar 2017 experimenteert de vereniging met het geven van deze bijlessen voor diverse vakken. Er is Study Support gegeven voor onder andere **Web Programming**, **Databases**, **Object Oriented Programming**, **Mathematics**, **Statistics** en **Research**.
+
+Study Support wordt gepromoot via de sociale media van de vereniging en de website. Ook zijn er posters te vinden binnen de Van DoorenVeste en worden er via het Instituut e-mails verzonden naar studenten.
+
+## Bekendheid van Study Support
+
+Hoe bekend is Study Support bij de studenten van HBO-ICT? Onderstaande figuur laat zien dat 40 van de 46 studenten (= `r round((40/46)*100,2)`%) Study Support kent.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q5, main="Kent de student Study Support?",xlab="Antwoordmogelijkheid",ylab="Hoeveelheid studenten")
+
+```
+
+Wie kennen Study Support precies? We gaan eerst kijken naar het studiejaar van de studenten.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+table(dat$q5,dat$q2)
+
+```
+
+Is er een verschil tussen leden en niet-leden? Het verschil is te klein om er uitspraken over te doen...
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+table(dat$q5,dat$q1)
+
+```
+
+## Vormen van studieondersteuning
+
+Studieondersteuning is er in vele vormen en maten. Waar hebben de studenen van HBO-ICT precies behoefte aan?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+library(readxl)
+q6 <- read_excel("q6.xlsx")
+q6$soort <- as.factor(q6$soort)
+q6
+
+```
+
+Tentamenvoorbereiding - de huidige vorm van Study Support - is het meest in trek bij studenten, gevolgd door samenvattingen en examenmateriaal.
+
+## Animo per vak
+
+Voor welke vakken is er vraag naar Study Support?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F, rows.print=15}
+
+library(readxl)
+q9 <- read_excel("q9.xlsx")
+q9$vak <- as.factor(q9$vak)
+q9
+
+```
+
+Hierboven is te zien dat **Wiskunde** de meeste animo geniet, gevolgd door **Statistiek**, **Object Oriented Programming (OOP)** en **Databases**. Het betreft dus voornamelijk eerstejaars vakken.
+
+## Geven van bijles
+
+In welke mate hebben studenten interesse in het geven van bijlessen?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q10,main="Willen studenten bijles geven?",xlab = "Keuzemogelijkheid",ylab="Hoeveelheid studenten")
+
+```
+
+`r nrow(dat[dat$q10 == "Ja",])` studenten geven aan bijles te willen geven. `r nrow(dat[dat$q10 == "Nee",])` studenten geven aan geen bijles te willen geven. `r nrow(dat[dat$q10 == "Misschien",])` studenten twijfelen of ze bijles willen geven.
+
+# Informatievoorziening
+
+In dit hoofdstuk behandelen we de informatievoorziening naar studenten toe. Sinds dit jaar is er meer studiegerelateerde informatie te vinden op de website. Ook is het bestuur benieuwd wat er eventueel op de website nog dient te komen.
+
+## Tentamenrooster
+
+Het tentamenrooster bevat alle tentamens die een student kan of dient te volgen, mits deze is ingeschreven voor het desbetreffende tentamen.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q13,main="Heeft de student moeite met het vinden van het tentamenrooster?",xlab = "Keuzemogelijkheid",ylab="Hoeveelheid studenten")
+
+```
+
+De meeste studenten ($N$ = `r nrow(dat[dat$q13 == "Nee",])`) geven aan geen moeite te hebben met het vinden van het tentamenrooster. `r nrow(dat[dat$q13 == "Ja",])` studenten geven aan wel moeite te hebben met het vinden van het tentamenrooster.
+
+## Studentenstatuut
+
+Het studentenstatuut bevat de belangrijkse rechten en plichten van studenten. Het gaat zowel om rechten en plichten uit allerlei wettelijke regelingen als om regelingen die de Hanzehogeschool Groningen zelf heeft vastgesteld [@Hanze_2017].
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q14,main="Heeft de student moeite met het vinden van het studentenstatuut?",xlab = "Keuzemogelijkheid",ylab="Hoeveelheid studenten")
+
+```
+
+Een krappe meerderheid van de studenten ($N$ = `r nrow(dat[dat$q14 == "Nee",])`) geeft aan geen moeite te hebben met het vinden van het studentenstatuut, versus `r nrow(dat[dat$q14 == "Ja",])` studenten die aangeven wel moeite te hebben met het vinden van het studentenstatuut.
+
+## Onderwijs- en examenregeling
+
+De OER (Onderwijs- en Examenregeling) legt het programma en de tentamens die afgelegd moeten worden vast, evenals de volgorde waarin studieonderdelen gevolgd moeten worden en welke werk- en toetsvorm er per onderdeel wordt gebruikt.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q15,main="Heeft de student moeite met het vinden van de OER?",xlab = "Keuzemogelijkheid",ylab="Hoeveelheid studenten")
+
+```
+
+De meeste studenten ($N$ = `r nrow(dat[dat$q15 == "Ja",])`) geven aan moeite te hebben met het vinden van de OER. `r nrow(dat[dat$q15 == "Nee",])` studenten geven aan geen moeite te hebben met het vinden van de OER.
+
+## Real*Time* Agenda
+
+De Real*Time* Agenda is een online openbare agenda waarin de evenementen van de vereniging staan.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+plot(dat$q16,main="Wil de student evenementen automatisch in zijn agenda hebben?",xlab = "Keuzemogelijkheid",ylab="Hoeveelheid studenten")
+
+```
+
+Hieronder is de verdeling tussen leden en niet-leden te zien bij de gestelde vraag.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+(counts <- table(dat$q1,dat$q16))
+
+prop.table(counts)
+
+```
+
+Om te kijken of er een verband is tussen lidstatus en de *agendawens*, voeren wij een $\chi^2$-toets uit. We kunnen de $\chi^2$-toets uitvoeren omdat de data willekeurig is verzameld, observaties onfhankelijk zijn gedaan, elke observatie in een categorie is in te delen en omdat de **verwachte** frequente per cel groter of gelijk is aan 5. De hypotheses zijn:
+
+$H_0$: Er is geen verband tussen lidstatus en de wens om verenigingsevenementen automatisch in de agenda te hebben. 
+
+$H_a$: Er is een verband tussen lidstatus en de wens om verenigingsevenementen automatisch in de agenda te hebben.
+
+Significantie wordt bereikt onder $a$-level 0,05. De hoeveelheid vrijheidsgraden is 1.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+(chq16 <- chisq.test(counts,correct = F))
+
+```
+
+Hierboven is te zien dat $p > a$ geldt. Dit betekent dat er geen significant verband is tussen lidstatus en de wens om verenigingsevenementen automatisch in de agenda te hebben. We kunnen de alternatieve hypothese dus niet accepteren en we handhaven de nullhypothese.
+
+We hebben de $\chi^2$-toets gebruikt om te testen of er een verband is: $\chi^2$(1) = `r chq16$statistic`, $p$ = `r chq16$p.value`. Wat is de effectgrootte?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+library(vcd)
+assocstats(counts)
+
+```
+
+Cramer's $V$ is `r assocstats(counts)$cramer`. De effectgrootte - en daarmee de samenhang tussen de twee nominale variabelen - is gemiddeld sterk.
+
+# Stellingen
+
+In dit hoofdstuk gaan we kijken naar wat studenten vinden van Real*Time*. Voelen studenten zich welkom bij de vereniging? Maakt Real*Time* de studetijd leuker? Kijken studenten uit naar de activiteiten van de vereniging? Is Real*Time* behulpzaam? Studenten gaven per stellling aan of zij het (helemaal) eens of oneens waren met een bepaald thema.
+
+## Welkom voelen
+
+Studenten is gevraagd of zij zich welkom voelen bij Real*Time*.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+plot(dat$q18,main = "Welkom voelen bij RealTime",xlab="Waardering",ylab = "Hoeveelheid studenten")
+table(dat$q18)
+
+```
+
+Hierboven is te zien dat de meeste studenten ($N$ = `r nrow(dat[dat$q18 == "4" | dat$q18 == "5",])`) zich welkom voelen bij Real*Time*. Hoe is de verdeling betreft leden en niet-leden?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+quant18 <- as.integer(dat$q18)
+table(dat$q1,dat$q18)
+
+```
+
+Is er een significant verschil tussen leden en niet-leden als het gaat om het welkom voelen bij Real*Time*? Om die vraag te beantwoorden, voeren wij een $t$-test uit. Om te kijken of we een $t$-test mogen uitvoeren, kijken we eerst of de waarderingen van de respondenten normaalverdeeld zijn. Naast het uitbeelden van de Q-Q plot doen we ook de Shapiro-Wilk test. Als $p < 0.05$, dan zijn de waarderingen van de respondenten **niet** normaalverdeeld.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+qqnorm(quant18)
+qqline(quant18)
+
+shapiro.test(quant18)
+
+```
+
+We kunnen aannemen dat de waarderingen van de respondenten niet normaalverdeeld zijn. Ter vervanging van de $t$-test dienen we daarom de Mann-Whitney U test uit te voeren.
+
+De hypotheses zijn:
+
+$H_0$: Er is geen significant verschil tussen leden en niet-leden als het gaat om het welkom voelen bij Real*Time*.
+
+$H_a$: Er is een significant verschil tussen leden en niet-leden als het gaat om het welkom voelen bij Real*Time*.
+
+Significantie wordt bereikt als de $p$-waarde lager is dan 0.05, ook wel bekend als $a$. Wat geldt is dus dat $H_a$ geaccepteerd kan worden als $p < a$.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+(tq18 <- wilcox.test(quant18 ~ q1, data = dat, alternative = "two.sided"))
+
+```
+
+Hierboven is te zien dat de $p$-waarde uitkomt op `r tq18$p.value`, dus geldt $p < a$. Dit betekent dat $H_0$ afgewezen kan worden en dat $H_a$ geaccepteerd kan worden. Er is een significant verschil tussen leden en niet-leden als het gaat om het welkom voelen bij Real*Time*. Significantie werd bereikt onder $a$-level 0,05: $W$ = `r tq18$statistic`, $p$ < 0.02.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+library(effsize)
+(dq18 <- cliff.delta(quant18 ~ q1, data=dat))
+
+```
+
+De gemiddelde score voor leden is 4,363636 . Voor niet-leden is de gemiddelde score 2,769231. De effectgrootte is groot (Cliff's $d$ = `r dq18$estimate`).
+
+## Leuke studietijd
+
+Studenten is gevraagd of Real*Time* hun studietijd leuker maakt.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+plot(dat$q19,main="RealTime maakt de studietijd leuker",xlab ="Waardering",ylab = "Hoeveelheid studenten")
+table(dat$q19)
+
+```
+
+Hierboven is te zien dat de meeste studenten ($N$ = `r nrow(dat[dat$q19 == "4" | dat$q19 == "5",])`) vinden dat Real*Time* hun studietijd leuker maakt. Veel studenten ($N$ = `r nrow(dat[dat$q19 == "3",])`) hebben tevens gekozen voor de middenweg; zij kozen de *neutrale* optie. Hoe is de verdeling betreft leden en niet-leden?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+table(dat$q1,dat$q19)
+
+```
+
+Is er een significant verschil tussen leden en niet-leden als het gaat om het gevoel dat Real*Time* de studietijd leuker maakt? Om die vraag te beantwoorden, voeren wij een $t$-test uit. Om te kijken of we een $t$-test mogen uitvoeren, kijken we eerst of de waarderingen van de respondenten normaalverdeeld zijn. Naast het uitbeelden van de Q-Q plot doen we ook de Shapiro-Wilk test. Als $p < 0.05$, dan zijn de waarderingen van de respondenten **niet** normaalverdeeld.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+quant19 <- as.integer(dat$q19)
+
+qqnorm(quant19)
+qqline(quant19)
+
+shapiro.test(quant19)
+
+```
+
+We kunnen aannemen dat de waarderingen van de respondenten niet normaalverdeeld zijn. Ter vervanging van de $t$-test dienen we daarom de Mann-Whitney U test uit te voeren.
+
+De hypotheses zijn:
+
+$H_0$: Er is geen significant verschil tussen leden en niet-leden als het gaat om het gevoel dat Real*Time* de studietijd leuker maakt.
+
+$H_a$: Er is een significant verschil tussen leden en niet-leden als het gaat om het gevoel dat Real*Time* de studietijd leuker maakt.
+
+Significantie wordt bereikt als de $p$-waarde lager is dan 0.05, ook wel bekend als $a$. Wat geldt is dus dat $H_a$ geaccepteerd kan worden als $p < a$.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+(tq19 <- wilcox.test(quant19 ~ q1, data = dat, alternative = "two.sided"))
+
+```
+
+
+Hierboven is te zien dat de $p$-waarde uitkomt op `r specify_decimal(tq19$p.value,10)`, dus geldt $p < a$. Dit betekent dat $H_0$ afgewezen kan worden en dat $H_a$ geaccepteerd kan worden. Er is een significant verschil tussen leden en niet-leden als het gaat om het gevoel dat Real*Time* de studietijd leuker maakt. Significantie werd bereikt onder $a$-level 0,05: $W$ = `r tq19$statistic`, $p$ < 0.004.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+library(effsize)
+(dq19 <- cliff.delta(quant19 ~ q1, data=dat))
+
+```
+
+De gemiddelde score voor leden is 4,060606. Voor niet-leden is de gemiddelde score 2,076923. De effectgrootte is groot (Cliff's $d$ = `r dq19$estimate`).
+
+## Uitkijken naar verenigingsactiviteiten
+
+Studenten is gevraagd of zij uitkijken naar de activiteiten van de vereniging. Hiermee worden alle activiteiten bedoeld, zoals de gezelligheidsactiviteiten, workshops, bedrijfsbezoeken en lezingen
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+plot(dat$q20,main = "Uitkijken naar verenigingsactiviteiten",xlab="Waardering",ylab = "Hoeveelheid studenten")
+table(dat$q20)
+
+```
+
+Hierboven is te zien dat de meeste studenten uitkijken naar de activiteiten van de vereniging ($N$ = `r nrow(dat[dat$q20 == "4" | dat$q20 == "5",])`). `r nrow(dat[dat$q20 == "1" | dat$q20 == "2",])` studenten geven aan niet of nauwelijks uit te kijken naar verenigingsactiviteiten. Hoe is de verdeling betreft leden en niet-leden?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+table(dat$q1,dat$q20)
+
+```
+
+Is er een significant verschil tussen leden en niet-leden als het gaat om het uitkijken naar de activiteiten van Real*Time*? Om die vraag te beantwoorden, voeren wij een $t$-test uit. Om te kijken of we een $t$-test mogen uitvoeren, kijken we eerst of de waarderingen van de respondenten normaalverdeeld zijn. Naast het uitbeelden van de Q-Q plot doen we ook de Shapiro-Wilk test. Als $p < 0.05$, dan zijn de waarderingen van de respondenten **niet** normaalverdeeld.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+quant20 <- as.integer(dat$q20)
+
+qqnorm(quant20)
+qqline(quant20)
+
+shapiro.test(quant20)
+
+```
+
+We kunnen aannemen dat de waarderingen van de respondenten niet normaalverdeeld zijn. Ter vervanging van de $t$-test dienen we daarom de Mann-Whitney U test uit te voeren.
+
+De hypotheses zijn:
+
+$H_0$: Er is geen significant verschil tussen leden en niet-leden als het gaat om het uitkijken naar de activiteiten van Real*Time*.
+
+$H_a$: Er is een significant verschil tussen leden en niet-leden als het gaat om het uitkijken naar de activiteiten van Real*Time*.
+
+Significantie wordt bereikt als de $p$-waarde lager is dan 0.05, ook wel bekend als $a$. Wat geldt is dus dat $H_a$ geaccepteerd kan worden als $p < a$.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+(tq20 <- wilcox.test(quant20 ~ q1, data = dat, alternative = "two.sided"))
+
+```
+
+Hierboven is te zien dat de $p$-waarde uitkomt op `r specify_decimal(tq20$p.value,12)`, dus geldt $p < a$. Dit betekent dat $H_0$ afgewezen kan worden en dat $H_a$ geaccepteerd kan worden. Er is een significant verschil tussen leden en niet-leden als het gaat om het uitkijken naar de activiteiten van Real*Time*. Significantie werd bereikt onder $a$-level 0,05: $W$ = `r tq20$statistic`, $p$ < 0.001.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+library(effsize)
+(dq20 <- cliff.delta(quant20 ~ q1, data=dat))
+
+```
+
+De gemiddelde score voor leden is 3,969697 . Voor niet-leden is de gemiddelde score 1,692308. De effectgrootte is groot (Cliff's $d$ = `r dq20$estimate`).
+
+## Kennen van meer bedrijven
+
+Studenten is gevraagd of zij dankzij Real*Time* meer bedrijven leren kennen. Het betreft niet specifiek ICT-bedrijven.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+plot(dat$q21,main = "Meer bedrijven kennen dankzij RealTime",xlab="Waardering",ylab = "Hoeveelheid studenten")
+table(dat$q21)
+
+```
+
+De meeste studenten ($N$ = `r nrow(dat[dat$q21 == "4" | dat$q21 == "5",])`) geven aan dankzij Real*Time* meer bedrijven te leren kennen. Een minderheid ($N$ = `r nrow(dat[dat$q21 == "1" | dat$q21 == "2",])`) geeft aan dat dit niet of nauwelijks het geval is. Hoe is de verdeling betreft leden en niet-leden?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+table(dat$q1,dat$q21)
+
+```
+
+Is er een significant verschil tussen leden en niet-leden als het gaat om het kennen van meer bedrijven dankzij Real*Time*? Om die vraag te beantwoorden, voeren wij een $t$-test uit. Om te kijken of we een $t$-test mogen uitvoeren, kijken we eerst of de waarderingen van de respondenten normaalverdeeld zijn. Naast het uitbeelden van de Q-Q plot doen we ook de Shapiro-Wilk test. Als $p < 0.05$, dan zijn de waarderingen van de respondenten **niet** normaalverdeeld.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+quant21 <- as.integer(dat$q21)
+
+qqnorm(quant21)
+qqline(quant21)
+
+shapiro.test(quant21)
+
+```
+
+We kunnen aannemen dat de waarderingen van de respondenten niet normaalverdeeld zijn. Ter vervanging van de $t$-test dienen we daarom de Mann-Whitney U test uit te voeren.
+
+De hypotheses zijn:
+
+$H_0$: Er is geen significant verschil tussen leden en niet-leden als het gaat om het van meer bedrijven dankzij Real*Time*.
+
+$H_a$: Er is een significant verschil tussen leden en niet-leden als het gaat om het van meer bedrijven dankzij Real*Time*.
+
+Significantie wordt bereikt als de $p$-waarde lager is dan 0.05, ook wel bekend als $a$. Wat geldt is dus dat $H_a$ geaccepteerd kan worden als $p < a$.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+(tq21 <- wilcox.test(quant21 ~ q1, data = dat, alternative = "two.sided"))
+
+```
+
+Hierboven is te zien dat de $p$-waarde uitkomt op `r tq21$p.value`, dus geldt $p < a$. Dit betekent dat $H_0$ afgewezen kan worden en dat $H_a$ geaccepteerd kan worden. Er is een significant verschil tussen leden en niet-leden als het gaat om het van meer bedrijven dankzij Real*Time*. Significantie werd bereikt onder $a$-level 0,05: $W$ = `r tq21$statistic`, $p$ < 0.002.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+library(effsize)
+(dq21 <- cliff.delta(quant21 ~ q1, data=dat))
+
+```
+
+De gemiddelde score voor leden is 4,060606. Voor niet-leden is de gemiddelde score 2,769231. De effectgrootte is groot (Cliff's $d$ = `r dq21$estimate`).
+
+## Behulpzaamheid
+
+Studenten is gevraagd of zij Real*Time* behulpzaam vinden.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+plot(dat$q22,main = "RealTime is behulpzaam",xlab="Waardering",ylab = "Hoeveelheid studenten")
+table(dat$q22)
+
+```
+
+De meeste studenten ($N$ = `r nrow(dat[dat$q22 == "4" | dat$q21 == "5",])`) geven aan dat Real*Time* behulpzaam is. De minderheid ($N$ = `r nrow(dat[dat$q22 == "1" | dat$q21 == "2",])`) geeft aan dat dit niet het geval is. Hoe is de verdeling betreft leden en niet-leden?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+table(dat$q1,dat$q22)
+
+```
+
+Is er een significant verschil tussen leden en niet-leden als het gaat om het behulpzaam vinden van Real*Time*? Om die vraag te beantwoorden, voeren wij een $t$-test uit. Om te kijken of we een $t$-test mogen uitvoeren, kijken we eerst of de waarderingen van de respondenten normaalverdeeld zijn. Naast het uitbeelden van de Q-Q plot doen we ook de Shapiro-Wilk test. Als $p < 0.05$, dan zijn de waarderingen van de respondenten **niet** normaalverdeeld.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+quant22 <- as.integer(dat$q22)
+
+qqnorm(quant22)
+qqline(quant22)
+
+shapiro.test(quant22)
+
+```
+
+We kunnen aannemen dat de waarderingen van de respondenten niet normaalverdeeld zijn. Ter vervanging van de $t$-test dienen we daarom de Mann-Whitney U test uit te voeren.
+
+De hypotheses zijn:
+
+$H_0$: Er is geen significant verschil tussen leden en niet-leden als het gaat om het behulpzaam vinden van Real*Time*.
+
+$H_a$: Er is een significant verschil tussen leden en niet-leden als het gaat om het behulpzaam vinden van Real*Time*.
+
+Significantie wordt bereikt als de $p$-waarde lager is dan 0.05, ook wel bekend als $a$. Wat geldt is dus dat $H_a$ geaccepteerd kan worden als $p < a$.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+(tq22 <- wilcox.test(quant22 ~ q1, data = dat, alternative = "two.sided"))
+
+```
+
+Hierboven is te zien dat de $p$-waarde uitkomt op `r tq22$p.value`, dus geldt $p < a$. Dit betekent dat $H_0$ afgewezen kan worden en dat $H_a$ geaccepteerd kan worden. Er is een significant verschil tussen leden en niet-leden als het gaat om het behulpzaam vinden van Real*Time*. Significantie werd bereikt onder $a$-level 0,05: $W$ = `r tq22$statistic`, $p$ < 0.002.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+library(effsize)
+(dq22 <- cliff.delta(quant22 ~ q1, data=dat))
+
+```
+
+De gemiddelde score voor leden is 4,151515. Voor niet-leden is de gemiddelde score 2,846154. De effectgrootte is groot (Cliff's $d$ = `r dq22$estimate`).
+
+# Algemene opinie
+
+In dit hoofdstuk zoomen we in op wat studenten in het algemeen vinden van Real*Time*. Wat zijn de positieve en negatieve zaken die studenten ervaren? Wat zouden studenten anders willen zien? Wat voor cijfer zouden studenten aan de vereniging geven?
+
+## Hoe denken studenten over Real*Time*?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F, rows.print=12}
+
+library(readxl)
+(q23 <- read_excel("q23.xlsx"))
+
+```
+
+## Wat ervaart de student positief aan Real*Time*?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F, rows.print=12}
+
+library(readxl)
+(q24 <- read_excel("q24.xlsx"))
+
+```
+
+## Wat ervaart de student negatief aan Real*Time*?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F, rows.print=12}
+
+library(readxl)
+(q25 <- read_excel("q25.xlsx"))
+
+```
+
+## Wat zien studenten graag anders bij Real*Time*?
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F, rows.print=12}
+
+library(readxl)
+(q26 <- read_excel("q26.xlsx"))
+
+```
+
+## Wat voor cijfer zouden studenten Real*Time* geven?
+
+Studenten konden Real*Time* een cijfer geven dat lag tussen de 1 en de 10. Hieronder zijn de kwartielen, het gemiddelde, het minimum, het maximum, de modus en de mediaan te zien.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F, rows.print=12}
+
+summary(dat$q27)
+
+mode <- function(x) {
+  counts <- table(x)
+  names(which(counts == max(counts)))
+}
+
+cat("Mode: ", mode(dat$q27))
+
+```
+
+Hoe ziet de verdeling van de cijfers eruit?
+
+```{r,fig.width=10, fig.height=7, warning=F, echo=F, rows.print=12}
+
+hist(dat$q27,main="Verdeling van cijfers",ylab="Hoeveelheid studenten",xlab="Cijfers")
+
+par(mfrow = c(1, 2))
+plot(density(dat$q27),main="Cijferdichtheid",ylab="Dichtheid",xlab="Cijfers", xlim = c(0,10))
+boxplot(dat$q27,ylab="Cijfers", xlab="Steekproef")
+
+```
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+table(dat$q1,dat$q27)
+
+```
+
+Is er een significant verschil tussen de cijfers van leden en de cijfers van niet-leden? Om die vraag te beantwoorden, voeren wij een $t$-test uit. Voordat we de $t$-test kunnen uitvoeren, dienen we te controleren of we voldoen aan de eisen voor de test. We gaan eerst kijken of de data normaalverdeeld is. De hypotheses voor de Shapiro-Wilktest zijn:
+
+$H_0$: Data is normaalverdeeld.
+
+$H_a$: Data is niet normaalverdeeld.
+
+Naast het uitvoeren van de Shapiro-Wilktest kijken we ook naar onderstaande Q-Q-plot.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F, rows.print=12}
+
+qqnorm(dat$q27)
+qqline(dat$q27)
+
+shapiro.test(dat$q27)
+
+```
+
+$p < a$, dus geldt dat $H_0$ afgewezen kan worden en dat $H_a$ geaccepteerd kan worden. Het is aannemelijk dat de data niet normaalverdeeld is en dat we daarom de $t$-test niet mogen uitvoeren. In plaats van de $t$-test voeren we daarom de nonparametrische variant uit, namelijk de Mann-Whitney U test (hetzelfde als Wilcoxon's rank sum test).
+
+De hypotheses zijn:
+
+$H_0$: Er is geen significant verschil tussen de cijfers van leden en de cijfers van niet-leden.
+
+$H_a$: Er is een significant verschil tussen de cijfers van leden en de cijfers van niet-leden.
+
+Significantie wordt bereikt als de $p$-waarde lager is dan 0.05, ook wel bekend als $a$. Wat geldt is dus dat $H_a$ geaccepteerd kan worden als $p < a$. Het aantal vrijheidsgraden is `r nrow(dat)-1`.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F,message=F}
+
+quant27 <- as.integer(dat$q27)
+
+(tq27 <- wilcox.test(quant27 ~ q1, data = dat, alternative = "two.sided", exact=T, correct=F))
+
+```
+
+Hierboven is te zien dat de $p$-waarde uitkomt op `r tq27$p.value`, dus geldt $p < a$. Dit betekent dat $H_0$ afgewezen kan worden en dat $H_a$ geaccepteerd kan worden. Er is een significant verschil tussen de cijfers van leden en de cijfers van niet-leden. Significantie werd bereikt onder $a$-level 0,05: $W$ = `r tq27$statistic`, $p$ < 0.004.
+
+```{r,fig.width=10, fig.height=5, warning=F, echo=F}
+
+library(effsize)
+(dq27 <- cliff.delta(quant27 ~ q1, data=dat))
+
+```
+
+De mediaan voor de cijfers van leden is  `r median(dat[dat$q1 == "Lid",]$q27)`. De mediaan voor de cijfers van niet-leden is `r median(dat[dat$q1 == "Niet-lid",]$q27)`. De effectgrootte is groot (Cliff's $d$ = `r dq27$estimate`).
+
+# Conclusie
+
+Het bestuur van S.V. Real*Time* wilt weten hoe studenten over de vereniging denken. De centrale onderzoeksvraag luidt als volgt:
+
+**Wat vindt de student van studievereniging Real*Time*?**
+
+Om deze onderzoeksvraag te beantwoorden, kijken we eerst naar onderstaande deelvragen.
+
+1. *Voelen studenten zich welkom bij studievereniging RealTime?*
+2. *Wat willen studenten (anders) zien bij studievereniging RealTime?*
+3. *Wat ervaren studenten als positief bij RealTime?*
+4. *Wat ervaren studenten als negatief bij RealTime?*
+
+Deze deelvragen zijn te beantwoorden door te kijken naar de informatie in hoofdstukken 5 en 6.
+
+## Voelen studenten zich welkom bij Real*Time*?
+
+In paragraaf 1 van hoofdstuk 5 valt te zien dat de meeste studenten ($N$ = 33; `r round(33/nrow(dat),digits=2)*100`% van de respondenten) zich welkom voelen bij Real*Time*. Er blijkt een significant verschil te zijn tussen leden en niet-leden als het gaat om de mate waarin zij zich welkom voelen bij de vereniging. De gemiddelde score voor leden is 4,363636 . Voor niet-leden is de gemiddelde score 2,769231.
+
+## Wat willen studenten (anders) zien bij Real*Time*?
+
+Respondenten geven aan dat de bureaucratie verminderd moet worden en dat de formele sfeer verminderd moet worden. Wat ook terugkomt is dat er gewerkt moet worden aan het beter werven van leden en dat leden zelf meer moeten kunnen organiseren. Daarnaast geven sommigen aan dat studenten positiever bereikt moeten worden. Enkelingen geven aan dat er meer InHouses bij grotere bedrijven plaats mogen vinden, het introductiekamp niet meer in tenten moet plaatsvinden en dat er meer gefocust moet worden op de studie.
+
+## Wat ervaren studenten als positief bij Real*Time*?
+
+Respondenten waarderen de leuke mensen, de gezelligheid, de sfeer en de professionaliteit. De bijlessen worden ook vaak genoemd, evenals de activiteiten die omschreven worden als leuk. De behulpzaamheid komt ook vaak terug.
+
+## Wat ervaren studenten als negatief bij Real*Time*?
+
+Enkele respondenten hekelen de bureaucratie binnen de vereniging. Enkelen geven aan dat het introductiekamp leuker kon zijn, er veel presentaties in de klas zijn, er weinig integriteit is en dat het met name voor eerstejaars studenten gesloten aan kan voelen. Een enkeling benoemd ook dat hij veel commercie ervaart en dat hij het gevoel heeft dat Real*Time* constant reclame maakt.
+
+## Wat vindt de student van Real*Time*?
+
+In paragraaf 1 van hoofdstuk 6 is te lezen dat de respondenten over het algemeen de vereniging gezellig en leuk vinden. Er is veel waardering voor de professionaliteit en de behulpzaamheid. De reacties zijn over het algemeen positief.
+
+De meeste respondenten zijn in het algemeen positief over Real*Time*. Globaal is telkens te zien dat niet-leden significant lager scoren op waarderingen. Zij geven over het algemeen lagere scores en zijn in de meeste gevallen negatiever over zaken.
+
+## Overige bevindingen
+
+- Studenten geven aan dankzij Real*Time* meer bedrijven te leren kennen.
+
+- De meeste studenten hebben moeite met het vinden van de OER.
+
+- Studenten willen bijles voor met name Wiskunde, Statistiek, OOP en Databases.
+
+- Study Support is bekend onder studenten.
+
+- Studenten bezoeken het liefst de gezelligheidsactiviteiten van de vereniging, gevolgd door LAN-party's, beurzen en InHouses.
+
+- Real*Time* wordt als behulpzaam ervaren.
+
+# Bronvermelding
